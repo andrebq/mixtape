@@ -19,6 +19,14 @@ func (s *Set[T]) PutAll(items ...T) {
 	}
 }
 
+func (s *Set[T]) Has(item T) bool {
+	if s.items == nil {
+		return false
+	}
+	_, found := s.items[item]
+	return found
+}
+
 func (s *Set[T]) AppendTo(out []T) []T {
 	if s.items == nil {
 		return out

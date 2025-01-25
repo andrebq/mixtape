@@ -17,4 +17,11 @@ func TestSchemaUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	err = db.Merge(context.Background(), "Pages", schema.ColumnList{
+		"publish_date",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 }

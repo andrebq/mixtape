@@ -42,7 +42,7 @@ func (s *S) Merge(ctx context.Context, name TableName, columns ColumnList) error
 		if errors.Is(err, sql.ErrNoRows) {
 			return createTable(ctx, tx, targetName, columns)
 		}
-		return mergeTable()
+		return mergeTable(ctx, tx, targetName, columns)
 	})
 }
 
@@ -63,8 +63,41 @@ func createTable(ctx context.Context, tx *sqlx.Tx, table string, cols ColumnList
 	return err
 }
 
-func mergeTable() error {
-	return errors.ErrUnsupported
+func mergeTable(ctx context.Context, conn *sqlx.Tx, table string, newCols ColumnList) error {
+	rows, err := conn.QueryxContext(ctx, fmt.Sprintf(`pragma table_info(%q)`, table))
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	type tbInfo struct {
+		CID          string  `db:"cid"`
+		Name         string  `db:"name"`
+		Type         string  `db:"type"`
+		NotNull      int     `db:"notnull"`
+		DefaultValue *string `db:"dflt_value"`
+		PK           int     `db:"pk"`
+	}
+	colset := generics.SetOf[ColumnName]()
+	for rows.Next() {
+		var info tbInfo
+		err = rows.StructScan(&info)
+		if err != nil {
+			return err
+		}
+		colset.PutAll(ColumnName(info.Name))
+	}
+	rows.Close()
+	for _, c := range newCols {
+		if colset.Has(c) {
+			continue
+		}
+		// TODO: there is probably a better way to batch all those changes
+		_, err = conn.ExecContext(ctx, fmt.Sprintf(`alter table %v add column %v blob`, table, c))
+		if err != nil {
+			return fmt.Errorf("unable to add column %v to table: %w", c, err)
+		}
+	}
+	return nil
 }
 
 func (t TableName) Valid() error {
