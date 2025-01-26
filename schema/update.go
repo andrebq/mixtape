@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"encoding/binary"
@@ -109,7 +110,49 @@ func (s *S) Put(ctx context.Context, tupleType TableName, values map[string]any)
 }
 
 func (s *S) Match(ctx context.Context, tupleType TableName, pattern map[string]any, projection ...ColumnName) ([]map[string]any, error) {
-	return nil, errors.ErrUnsupported
+	var params []any
+	cmd := &bytes.Buffer{}
+	cmd.WriteString("select ")
+	for i, p := range projection {
+		if err := p.Normalize().Valid(); err != nil {
+			return nil, err
+		}
+		if i != 0 {
+			cmd.WriteString(",")
+		}
+		fmt.Fprintf(cmd, "%v as %q", p, p)
+	}
+	fmt.Fprintf(cmd, " from t_%v where ", tupleType)
+	first := true
+	for k, v := range pattern {
+		kn := ColumnName(k).Normalize()
+		if err := kn.Valid(); err != nil {
+			return nil, err
+		}
+		if !first {
+			cmd.WriteString(" and ")
+		}
+		first = false
+		fmt.Fprintf(cmd, "(%v = ?)", kn)
+		params = append(params, v)
+	}
+	fmt.Fprintf(cmd, " order by %v", projection[0])
+	println("cmd", cmd.String())
+	rows, err := s.db.QueryxContext(ctx, cmd.String(), params...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var ret []map[string]any
+	for rows.Next() {
+		out := map[string]any{}
+		err = rows.MapScan(out)
+		if err != nil {
+			return nil, err
+		}
+		ret = append(ret, out)
+	}
+	return ret, nil
 }
 
 func (s *S) Merge(ctx context.Context, name TableName, columns ColumnList) error {
@@ -139,7 +182,7 @@ func createTable(ctx context.Context, tx *sqlx.Tx, table string, cols ColumnList
 	cols = colset.AppendTo(cols[:0])
 	slices.Sort(cols)
 	for _, c := range cols {
-		fmt.Fprintf(&buf, "%v blob,\n", c)
+		fmt.Fprintf(&buf, "%v text,\n", c)
 	}
 	fmt.Fprintf(&buf, "primary key (%v)", oidCol)
 	fmt.Fprintf(&buf, ")")
@@ -176,7 +219,7 @@ func mergeTable(ctx context.Context, conn *sqlx.Tx, table string, newCols Column
 			continue
 		}
 		// TODO: there is probably a better way to batch all those changes
-		_, err = conn.ExecContext(ctx, fmt.Sprintf(`alter table %v add column %v blob`, table, c))
+		_, err = conn.ExecContext(ctx, fmt.Sprintf(`alter table %v add column %v text`, table, c))
 		if err != nil {
 			return fmt.Errorf("unable to add column %v to table: %w", c, err)
 		}
