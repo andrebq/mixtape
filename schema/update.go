@@ -36,6 +36,7 @@ var (
 )
 
 func (s *S) Put(ctx context.Context, tupleType TableName, values map[string]any) (uuid.UUID, error) {
+	// TODO: this method is huge... fix it
 	cols := make(ColumnList, 0, len(values))
 	cvals := make([]any, 0, len(values))
 	var nextoid uuid.UUID
@@ -105,6 +106,10 @@ func (s *S) Put(ctx context.Context, tupleType TableName, values map[string]any)
 	}
 	_, err = s.db.ExecContext(ctx, cmd.String(), cvals...)
 	return nextoid, err
+}
+
+func (s *S) Match(ctx context.Context, tupleType TableName, pattern map[string]any, projection ...ColumnName) ([]map[string]any, error) {
+	return nil, errors.ErrUnsupported
 }
 
 func (s *S) Merge(ctx context.Context, name TableName, columns ColumnList) error {

@@ -52,4 +52,11 @@ func TestSchemaUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	matches, err := db.Match(context.Background(), "NewTuple", map[string]any{"field": "value"}, "oid", "a_new_field")
+	if err != nil {
+		t.Fatal(err)
+	} else {
+		t.Logf("Matches: %v", matches)
+		t.Fail()
+	}
 }
