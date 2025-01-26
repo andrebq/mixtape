@@ -22,6 +22,10 @@ func TempDB(t testing.TB) (*schema.S, func(t testing.TB)) {
 		if err != nil {
 			r.Errorf("Unable to close database at %v, will try to remove the directory anyway", tmpdir)
 		}
+		if r.Failed() && os.Getenv("MIXTAPE_TEST_PRESERVE_DB") == "1" {
+			t.Logf("Preserving database at directory %v", tmpdir)
+			return
+		}
 		os.RemoveAll(tmpdir)
 	}
 }

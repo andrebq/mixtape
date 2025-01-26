@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -12,17 +13,27 @@ import (
 type (
 	S struct {
 		db *sqlx.DB
+
+		randSeed uuid.UUID
+
+		oidCount uint64
 	}
 )
 
 func Open(dest string) (*S, error) {
 	dbpath := filepath.Join(dest, "index.db")
 	dsn := fmt.Sprintf("file:%v?cache=shared", dbpath)
+	seed, err := uuid.NewRandom()
+	if err != nil {
+		return nil, err
+	}
 	conn, err := sqlx.Open("sqlite3", dsn)
 	if err != nil {
 		return nil, err
 	}
-	return &S{db: conn}, nil
+	return &S{db: conn,
+		randSeed: seed,
+	}, nil
 }
 
 func (s *S) Close() error {

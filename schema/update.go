@@ -3,14 +3,18 @@ package schema
 import (
 	"context"
 	"database/sql"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"regexp"
 	"slices"
 	"strings"
+	"sync/atomic"
+	"time"
 
 	"github.com/andrebq/mixtape/generics"
 	"github.com/andrebq/mixtape/internal/validate"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -24,8 +28,68 @@ type (
 var (
 	validIdentifer = regexp.MustCompile(`^[A-Z]+[A-Z0-9_]*$`)
 
-	ErrInvalidName = errors.New("invalid identifier")
+	ErrInvalidName    = errors.New("invalid identifier")
+	ErrMissingOID     = errors.New("missing required field oid")
+	ErrInvalidOIDType = errors.New("oid field must be a string or a uuid.UUID")
+
+	oidCol = ColumnName("oid").Normalize()
 )
+
+func (s *S) Put(ctx context.Context, tupleType TableName, values map[string]any) (uuid.UUID, error) {
+	cols := make(ColumnList, 0, len(values))
+	cvals := make([]any, 0, len(values))
+	var nextoid uuid.UUID
+	for k, v := range values {
+		cols = append(cols, ColumnName(k))
+		cvals = append(cvals, v)
+		if k == string(oidCol) {
+			switch v := v.(type) {
+			case string:
+				var err error
+				nextoid, err = uuid.Parse(v)
+				if err != nil {
+					return nextoid, fmt.Errorf("invalid oid: %w", err)
+				}
+			case uuid.UUID:
+				nextoid = v
+			default:
+				return nextoid, ErrInvalidOIDType
+			}
+		}
+	}
+	err := s.Merge(ctx, tupleType, cols)
+	if err != nil {
+		return nextoid, err
+	}
+	colset := generics.SetOf(cols...)
+	if !colset.Has(oidCol) {
+		cols = append(cols, oidCol)
+		var oidSeed [16]byte
+		nval := atomic.AddUint64(&s.oidCount, 1)
+		now := time.Now().UnixMicro()
+		binary.BigEndian.AppendUint64(oidSeed[:0], nval)
+		binary.BigEndian.AppendUint64(oidSeed[8:8], uint64(now))
+		cvals = append(cvals, uuid.NewSHA1(s.randSeed, oidSeed[:]))
+	}
+	cmd := &strings.Builder{}
+	fmt.Fprintf(cmd, `insert into t_%v(`, tupleType.Normalize())
+	for i, c := range cols {
+		if i != 0 {
+			cmd.WriteString(",")
+		}
+		fmt.Fprintf(cmd, "%v", c.Normalize())
+	}
+	fmt.Fprintf(cmd, ") values (")
+	for i := range cols {
+		if i != 0 {
+			cmd.WriteString(",")
+		}
+		cmd.WriteString("?")
+	}
+	cmd.WriteString(")")
+	_, err = s.db.ExecContext(ctx, cmd.String(), cvals...)
+	return nextoid, err
+}
 
 func (s *S) Merge(ctx context.Context, name TableName, columns ColumnList) error {
 	name = name.Normalize()
@@ -47,17 +111,16 @@ func (s *S) Merge(ctx context.Context, name TableName, columns ColumnList) error
 }
 
 func createTable(ctx context.Context, tx *sqlx.Tx, table string, cols ColumnList) error {
-	oid := ColumnName("oid")
 	buf := strings.Builder{}
 	colset := generics.SetOf(cols...)
-	colset.PutAll(oid)
+	colset.PutAll(oidCol)
 	fmt.Fprintf(&buf, "create table %v(\n", table)
 	cols = colset.AppendTo(cols[:0])
 	slices.Sort(cols)
 	for _, c := range cols {
 		fmt.Fprintf(&buf, "%v blob,\n", c)
 	}
-	fmt.Fprintf(&buf, "primary key (%v)", oid)
+	fmt.Fprintf(&buf, "primary key (%v)", oidCol)
 	fmt.Fprintf(&buf, ")")
 	_, err := tx.ExecContext(ctx, buf.String())
 	return err
