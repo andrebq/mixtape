@@ -43,4 +43,13 @@ func TestSchemaUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	_, err = db.Put(context.Background(), "NewTuple", map[string]any{
+		"oid":         "28459049-d5cc-5b6e-9e71-9a0bb410ef3a",
+		"field":       "value",
+		"otherField":  "otherValue",
+		"a_new_field": 1,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 }

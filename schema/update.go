@@ -40,9 +40,9 @@ func (s *S) Put(ctx context.Context, tupleType TableName, values map[string]any)
 	cvals := make([]any, 0, len(values))
 	var nextoid uuid.UUID
 	for k, v := range values {
-		cols = append(cols, ColumnName(k))
-		cvals = append(cvals, v)
-		if k == string(oidCol) {
+		nk := ColumnName(k).Normalize()
+		cols = append(cols, nk)
+		if nk == oidCol {
 			switch v := v.(type) {
 			case string:
 				var err error
@@ -50,25 +50,30 @@ func (s *S) Put(ctx context.Context, tupleType TableName, values map[string]any)
 				if err != nil {
 					return nextoid, fmt.Errorf("invalid oid: %w", err)
 				}
+				cvals = append(cvals, nextoid)
 			case uuid.UUID:
 				nextoid = v
+				cvals = append(cvals, nextoid)
 			default:
 				return nextoid, ErrInvalidOIDType
 			}
+		} else {
+			cvals = append(cvals, v)
 		}
 	}
-	err := s.Merge(ctx, tupleType, cols)
+	// remove this duplication here
+	err := s.Merge(ctx, tupleType, append(ColumnList(nil), cols...))
 	if err != nil {
 		return nextoid, err
 	}
 	colset := generics.SetOf(cols...)
 	if !colset.Has(oidCol) {
-		cols = append(cols, oidCol)
 		var oidSeed [16]byte
 		nval := atomic.AddUint64(&s.oidCount, 1)
 		now := time.Now().UnixMicro()
 		binary.BigEndian.AppendUint64(oidSeed[:0], nval)
 		binary.BigEndian.AppendUint64(oidSeed[8:8], uint64(now))
+		cols = append(cols, oidCol)
 		cvals = append(cvals, uuid.NewSHA1(s.randSeed, oidSeed[:]))
 	}
 	cmd := &strings.Builder{}
@@ -86,7 +91,18 @@ func (s *S) Put(ctx context.Context, tupleType TableName, values map[string]any)
 		}
 		cmd.WriteString("?")
 	}
-	cmd.WriteString(")")
+	fmt.Fprintf(cmd, ") on conflict (%v) do update set ", oidCol)
+	addComma := false
+	for _, c := range cols {
+		if c.Normalize() == oidCol {
+			continue
+		}
+		if addComma {
+			cmd.WriteString(", ")
+		}
+		fmt.Fprintf(cmd, "%v = excluded.%v", c, c)
+		addComma = true
+	}
 	_, err = s.db.ExecContext(ctx, cmd.String(), cvals...)
 	return nextoid, err
 }
