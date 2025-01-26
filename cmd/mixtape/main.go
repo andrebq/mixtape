@@ -9,8 +9,5 @@ import (
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
-
-	println("done")
-
 	<-ctx.Done()
 }

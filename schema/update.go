@@ -75,8 +75,9 @@ func (s *S) Put(ctx context.Context, tupleType TableName, values map[string]any)
 		now := time.Now().UnixMicro()
 		binary.BigEndian.AppendUint64(oidSeed[:0], nval)
 		binary.BigEndian.AppendUint64(oidSeed[8:8], uint64(now))
+		nextoid = uuid.NewSHA1(s.randSeed, oidSeed[:])
 		cols = append(cols, oidCol)
-		cvals = append(cvals, uuid.NewSHA1(s.randSeed, oidSeed[:]))
+		cvals = append(cvals, nextoid)
 	}
 	cmd := &strings.Builder{}
 	fmt.Fprintf(cmd, `insert into t_%v(`, tupleType.Normalize())
@@ -137,7 +138,6 @@ func (s *S) Match(ctx context.Context, tupleType TableName, pattern map[string]a
 		params = append(params, v)
 	}
 	fmt.Fprintf(cmd, " order by %v", projection[0])
-	println("cmd", cmd.String())
 	rows, err := s.db.QueryxContext(ctx, cmd.String(), params...)
 	if err != nil {
 		return nil, err
