@@ -11,7 +11,7 @@ type (
 		To      Address             `msg:"t"`
 		Payload []byte              `msg:"p"`
 		ReplyTo uuid.UUID           `msg:"rt"`
-		Headers map[string][]string `msg:"h"`
+		Headers map[string][]string `msg:"h,omitempty"`
 	}
 
 	Address struct {

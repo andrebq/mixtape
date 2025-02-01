@@ -5,6 +5,7 @@ import (
 	"errors"
 	"runtime"
 	"sync"
+	"time"
 
 	"github.com/andrebq/mixtape/generics"
 	"github.com/google/uuid"
@@ -56,11 +57,28 @@ func (r *Rack) runLog() {
 			close(k)
 		}
 	}()
+	oldMessages := map[*Message]time.Time{}
 	for {
 		select {
 		case <-r.closed:
 			return
 		case c := <-r.newConsumer:
+			now := time.Now()
+			delivered := false
+			for msg, expire := range oldMessages {
+				if expire.Before(now) {
+					delete(oldMessages, msg)
+				}
+				if c.inbox == msg.To.Node {
+					delivered = generics.NonBlockSend(c.output, msg)
+					delete(oldMessages, msg)
+					break
+				}
+			}
+			if delivered {
+				// old message already sent
+				continue
+			}
 			consumers[c.output] = c.inbox
 		case c := <-r.dropConsumer:
 			delete(consumers, c.output)
@@ -70,10 +88,24 @@ func (r *Rack) runLog() {
 			for k := range followers {
 				generics.NonBlockSend(k, m)
 			}
+			var delivered bool
 			for k, v := range consumers {
 				if v == m.To.Node {
-					generics.NonBlockSend(k, m)
+					delivered = generics.NonBlockSend(k, m)
 					delete(consumers, k)
+				}
+			}
+			if !delivered {
+				// add to old messages if space is available
+				now := time.Now()
+				for old, expire := range oldMessages {
+					if expire.Before(now) {
+						// TODO: delete oldest messages instead of just expired ones?
+						delete(oldMessages, old)
+					}
+				}
+				if len(oldMessages) < 1000 {
+					oldMessages[m] = time.Now().Add(time.Minute)
 				}
 			}
 		}

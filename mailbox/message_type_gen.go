@@ -296,115 +296,133 @@ func (z *Message) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z *Message) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 6
-	// write "i"
-	err = en.Append(0x86, 0xa1, 0x69)
+	// check for omitted fields
+	zb0001Len := uint32(6)
+	var zb0001Mask uint8 /* 6 bits */
+	_ = zb0001Mask
+	if z.Headers == nil {
+		zb0001Len--
+		zb0001Mask |= 0x20
+	}
+	// variable map header, size zb0001Len
+	err = en.Append(0x80 | uint8(zb0001Len))
 	if err != nil {
 		return
 	}
-	err = en.WriteBytes((z.ID)[:])
-	if err != nil {
-		err = msgp.WrapError(err, "ID")
-		return
-	}
-	// write "f"
-	err = en.Append(0xa1, 0x66)
-	if err != nil {
-		return
-	}
-	// map header, size 2
-	// write "n"
-	err = en.Append(0x82, 0xa1, 0x6e)
-	if err != nil {
-		return
-	}
-	err = en.WriteBytes((z.From.Node)[:])
-	if err != nil {
-		err = msgp.WrapError(err, "From", "Node")
-		return
-	}
-	// write "p"
-	err = en.Append(0xa1, 0x70)
-	if err != nil {
-		return
-	}
-	err = en.WriteUint64(z.From.Process)
-	if err != nil {
-		err = msgp.WrapError(err, "From", "Process")
-		return
-	}
-	// write "t"
-	err = en.Append(0xa1, 0x74)
-	if err != nil {
-		return
-	}
-	// map header, size 2
-	// write "n"
-	err = en.Append(0x82, 0xa1, 0x6e)
-	if err != nil {
-		return
-	}
-	err = en.WriteBytes((z.To.Node)[:])
-	if err != nil {
-		err = msgp.WrapError(err, "To", "Node")
-		return
-	}
-	// write "p"
-	err = en.Append(0xa1, 0x70)
-	if err != nil {
-		return
-	}
-	err = en.WriteUint64(z.To.Process)
-	if err != nil {
-		err = msgp.WrapError(err, "To", "Process")
-		return
-	}
-	// write "p"
-	err = en.Append(0xa1, 0x70)
-	if err != nil {
-		return
-	}
-	err = en.WriteBytes(z.Payload)
-	if err != nil {
-		err = msgp.WrapError(err, "Payload")
-		return
-	}
-	// write "rt"
-	err = en.Append(0xa2, 0x72, 0x74)
-	if err != nil {
-		return
-	}
-	err = en.WriteBytes((z.ReplyTo)[:])
-	if err != nil {
-		err = msgp.WrapError(err, "ReplyTo")
-		return
-	}
-	// write "h"
-	err = en.Append(0xa1, 0x68)
-	if err != nil {
-		return
-	}
-	err = en.WriteMapHeader(uint32(len(z.Headers)))
-	if err != nil {
-		err = msgp.WrapError(err, "Headers")
-		return
-	}
-	for za0005, za0006 := range z.Headers {
-		err = en.WriteString(za0005)
+
+	// skip if no fields are to be emitted
+	if zb0001Len != 0 {
+		// write "i"
+		err = en.Append(0xa1, 0x69)
 		if err != nil {
-			err = msgp.WrapError(err, "Headers")
 			return
 		}
-		err = en.WriteArrayHeader(uint32(len(za0006)))
+		err = en.WriteBytes((z.ID)[:])
 		if err != nil {
-			err = msgp.WrapError(err, "Headers", za0005)
+			err = msgp.WrapError(err, "ID")
 			return
 		}
-		for za0007 := range za0006 {
-			err = en.WriteString(za0006[za0007])
+		// write "f"
+		err = en.Append(0xa1, 0x66)
+		if err != nil {
+			return
+		}
+		// map header, size 2
+		// write "n"
+		err = en.Append(0x82, 0xa1, 0x6e)
+		if err != nil {
+			return
+		}
+		err = en.WriteBytes((z.From.Node)[:])
+		if err != nil {
+			err = msgp.WrapError(err, "From", "Node")
+			return
+		}
+		// write "p"
+		err = en.Append(0xa1, 0x70)
+		if err != nil {
+			return
+		}
+		err = en.WriteUint64(z.From.Process)
+		if err != nil {
+			err = msgp.WrapError(err, "From", "Process")
+			return
+		}
+		// write "t"
+		err = en.Append(0xa1, 0x74)
+		if err != nil {
+			return
+		}
+		// map header, size 2
+		// write "n"
+		err = en.Append(0x82, 0xa1, 0x6e)
+		if err != nil {
+			return
+		}
+		err = en.WriteBytes((z.To.Node)[:])
+		if err != nil {
+			err = msgp.WrapError(err, "To", "Node")
+			return
+		}
+		// write "p"
+		err = en.Append(0xa1, 0x70)
+		if err != nil {
+			return
+		}
+		err = en.WriteUint64(z.To.Process)
+		if err != nil {
+			err = msgp.WrapError(err, "To", "Process")
+			return
+		}
+		// write "p"
+		err = en.Append(0xa1, 0x70)
+		if err != nil {
+			return
+		}
+		err = en.WriteBytes(z.Payload)
+		if err != nil {
+			err = msgp.WrapError(err, "Payload")
+			return
+		}
+		// write "rt"
+		err = en.Append(0xa2, 0x72, 0x74)
+		if err != nil {
+			return
+		}
+		err = en.WriteBytes((z.ReplyTo)[:])
+		if err != nil {
+			err = msgp.WrapError(err, "ReplyTo")
+			return
+		}
+		if (zb0001Mask & 0x20) == 0 { // if not omitted
+			// write "h"
+			err = en.Append(0xa1, 0x68)
 			if err != nil {
-				err = msgp.WrapError(err, "Headers", za0005, za0007)
 				return
+			}
+			err = en.WriteMapHeader(uint32(len(z.Headers)))
+			if err != nil {
+				err = msgp.WrapError(err, "Headers")
+				return
+			}
+			for za0005, za0006 := range z.Headers {
+				err = en.WriteString(za0005)
+				if err != nil {
+					err = msgp.WrapError(err, "Headers")
+					return
+				}
+				err = en.WriteArrayHeader(uint32(len(za0006)))
+				if err != nil {
+					err = msgp.WrapError(err, "Headers", za0005)
+					return
+				}
+				for za0007 := range za0006 {
+					err = en.WriteString(za0006[za0007])
+					if err != nil {
+						err = msgp.WrapError(err, "Headers", za0005, za0007)
+						return
+					}
+				}
 			}
 		}
 	}
@@ -414,42 +432,57 @@ func (z *Message) EncodeMsg(en *msgp.Writer) (err error) {
 // MarshalMsg implements msgp.Marshaler
 func (z *Message) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 6
-	// string "i"
-	o = append(o, 0x86, 0xa1, 0x69)
-	o = msgp.AppendBytes(o, (z.ID)[:])
-	// string "f"
-	o = append(o, 0xa1, 0x66)
-	// map header, size 2
-	// string "n"
-	o = append(o, 0x82, 0xa1, 0x6e)
-	o = msgp.AppendBytes(o, (z.From.Node)[:])
-	// string "p"
-	o = append(o, 0xa1, 0x70)
-	o = msgp.AppendUint64(o, z.From.Process)
-	// string "t"
-	o = append(o, 0xa1, 0x74)
-	// map header, size 2
-	// string "n"
-	o = append(o, 0x82, 0xa1, 0x6e)
-	o = msgp.AppendBytes(o, (z.To.Node)[:])
-	// string "p"
-	o = append(o, 0xa1, 0x70)
-	o = msgp.AppendUint64(o, z.To.Process)
-	// string "p"
-	o = append(o, 0xa1, 0x70)
-	o = msgp.AppendBytes(o, z.Payload)
-	// string "rt"
-	o = append(o, 0xa2, 0x72, 0x74)
-	o = msgp.AppendBytes(o, (z.ReplyTo)[:])
-	// string "h"
-	o = append(o, 0xa1, 0x68)
-	o = msgp.AppendMapHeader(o, uint32(len(z.Headers)))
-	for za0005, za0006 := range z.Headers {
-		o = msgp.AppendString(o, za0005)
-		o = msgp.AppendArrayHeader(o, uint32(len(za0006)))
-		for za0007 := range za0006 {
-			o = msgp.AppendString(o, za0006[za0007])
+	// check for omitted fields
+	zb0001Len := uint32(6)
+	var zb0001Mask uint8 /* 6 bits */
+	_ = zb0001Mask
+	if z.Headers == nil {
+		zb0001Len--
+		zb0001Mask |= 0x20
+	}
+	// variable map header, size zb0001Len
+	o = append(o, 0x80|uint8(zb0001Len))
+
+	// skip if no fields are to be emitted
+	if zb0001Len != 0 {
+		// string "i"
+		o = append(o, 0xa1, 0x69)
+		o = msgp.AppendBytes(o, (z.ID)[:])
+		// string "f"
+		o = append(o, 0xa1, 0x66)
+		// map header, size 2
+		// string "n"
+		o = append(o, 0x82, 0xa1, 0x6e)
+		o = msgp.AppendBytes(o, (z.From.Node)[:])
+		// string "p"
+		o = append(o, 0xa1, 0x70)
+		o = msgp.AppendUint64(o, z.From.Process)
+		// string "t"
+		o = append(o, 0xa1, 0x74)
+		// map header, size 2
+		// string "n"
+		o = append(o, 0x82, 0xa1, 0x6e)
+		o = msgp.AppendBytes(o, (z.To.Node)[:])
+		// string "p"
+		o = append(o, 0xa1, 0x70)
+		o = msgp.AppendUint64(o, z.To.Process)
+		// string "p"
+		o = append(o, 0xa1, 0x70)
+		o = msgp.AppendBytes(o, z.Payload)
+		// string "rt"
+		o = append(o, 0xa2, 0x72, 0x74)
+		o = msgp.AppendBytes(o, (z.ReplyTo)[:])
+		if (zb0001Mask & 0x20) == 0 { // if not omitted
+			// string "h"
+			o = append(o, 0xa1, 0x68)
+			o = msgp.AppendMapHeader(o, uint32(len(z.Headers)))
+			for za0005, za0006 := range z.Headers {
+				o = msgp.AppendString(o, za0005)
+				o = msgp.AppendArrayHeader(o, uint32(len(za0006)))
+				for za0007 := range za0006 {
+					o = msgp.AppendString(o, za0006[za0007])
+				}
+			}
 		}
 	}
 	return
