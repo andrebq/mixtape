@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package api;
+
+option go_package = "./api";
+
+// Service definition
+service TaskService {
+  rpc ExchangeToken (ExchangeTokenRequest) returns (Token);
+  rpc GetTasks (Empty) returns (TaskList);
+  rpc NextStep (NextStepRequest) returns (Steps);
+  rpc UpdateLog (LogEntry) returns (Empty);
+  rpc UpdateTaskStatus (TaskStatus) returns (Empty);
+  rpc UpdateTaskValue (KeyValueList) returns (Empty);
+  rpc AgentPing(AgentSpec) returns (Empty);
+}
+
+// Message definitions
+message Token {
+    string jwt = 1;
+}
+
+message AgentSpec {
+    string name = 1;
+    repeated string labels = 2;
+    string version = 3;
+}
+
+message ExchangeTokenRequest {
+    string use = 2;
+}
+
+message TaskList {
+    repeated Task tasks = 1;
+}
+
+message Task {
+    string id = 1;
+    string interpreter = 2;
+}
+
+message NextStepRequest {
+    string task_id = 1;
+    int32 previous_step = 2;
+}
+
+message Steps {
+    repeated Step steps = 1;
+    bool completed = 2;
+    int32 retryOnSecs = 3;
+}
+
+message Step {
+    int32 index = 1;
+    string instructions = 2;
+}
+
+message LogEntry {}
+
+message TaskStatus {}
+
+message KeyValueList {}
+
+message Empty {}

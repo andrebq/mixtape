@@ -1,6 +1,9 @@
 .PHONY: default build test run
 
 default: build
+
+include Protobuf.mk
+
 generate:
 	go install github.com/tinylib/msgp@latest
 	go generate ./...
