@@ -19,333 +19,253 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	TaskService_ExchangeToken_FullMethodName    = "/api.TaskService/ExchangeToken"
-	TaskService_GetTasks_FullMethodName         = "/api.TaskService/GetTasks"
-	TaskService_NextStep_FullMethodName         = "/api.TaskService/NextStep"
-	TaskService_UpdateLog_FullMethodName        = "/api.TaskService/UpdateLog"
-	TaskService_UpdateTaskStatus_FullMethodName = "/api.TaskService/UpdateTaskStatus"
-	TaskService_UpdateTaskValue_FullMethodName  = "/api.TaskService/UpdateTaskValue"
-	TaskService_AgentPing_FullMethodName        = "/api.TaskService/AgentPing"
+	TaskManager_RegisterSupervisor_FullMethodName = "/api.TaskManager/RegisterSupervisor"
+	TaskManager_FetchTask_FullMethodName          = "/api.TaskManager/FetchTask"
+	TaskManager_AppendLog_FullMethodName          = "/api.TaskManager/AppendLog"
+	TaskManager_UploadAsset_FullMethodName        = "/api.TaskManager/UploadAsset"
+	TaskManager_WaitForInput_FullMethodName       = "/api.TaskManager/WaitForInput"
 )
 
-// TaskServiceClient is the client API for TaskService service.
+// TaskManagerClient is the client API for TaskManager service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
-// Service definition
-type TaskServiceClient interface {
-	ExchangeToken(ctx context.Context, in *ExchangeTokenRequest, opts ...grpc.CallOption) (*Token, error)
-	GetTasks(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*TaskList, error)
-	NextStep(ctx context.Context, in *NextStepRequest, opts ...grpc.CallOption) (*Steps, error)
-	UpdateLog(ctx context.Context, in *LogEntry, opts ...grpc.CallOption) (*Empty, error)
-	UpdateTaskStatus(ctx context.Context, in *TaskStatus, opts ...grpc.CallOption) (*Empty, error)
-	UpdateTaskValue(ctx context.Context, in *KeyValueList, opts ...grpc.CallOption) (*Empty, error)
-	AgentPing(ctx context.Context, in *AgentSpec, opts ...grpc.CallOption) (*Empty, error)
+type TaskManagerClient interface {
+	RegisterSupervisor(ctx context.Context, in *SupervisorStats, opts ...grpc.CallOption) (*SupervisorConfig, error)
+	FetchTask(ctx context.Context, in *RunnerSpec, opts ...grpc.CallOption) (*NextTask, error)
+	AppendLog(ctx context.Context, in *LogEntry, opts ...grpc.CallOption) (*Empty, error)
+	UploadAsset(ctx context.Context, in *Asset, opts ...grpc.CallOption) (*AssetRef, error)
+	WaitForInput(ctx context.Context, in *InputRequest, opts ...grpc.CallOption) (*InputResponse, error)
 }
 
-type taskServiceClient struct {
+type taskManagerClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewTaskServiceClient(cc grpc.ClientConnInterface) TaskServiceClient {
-	return &taskServiceClient{cc}
+func NewTaskManagerClient(cc grpc.ClientConnInterface) TaskManagerClient {
+	return &taskManagerClient{cc}
 }
 
-func (c *taskServiceClient) ExchangeToken(ctx context.Context, in *ExchangeTokenRequest, opts ...grpc.CallOption) (*Token, error) {
+func (c *taskManagerClient) RegisterSupervisor(ctx context.Context, in *SupervisorStats, opts ...grpc.CallOption) (*SupervisorConfig, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Token)
-	err := c.cc.Invoke(ctx, TaskService_ExchangeToken_FullMethodName, in, out, cOpts...)
+	out := new(SupervisorConfig)
+	err := c.cc.Invoke(ctx, TaskManager_RegisterSupervisor_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *taskServiceClient) GetTasks(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*TaskList, error) {
+func (c *taskManagerClient) FetchTask(ctx context.Context, in *RunnerSpec, opts ...grpc.CallOption) (*NextTask, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(TaskList)
-	err := c.cc.Invoke(ctx, TaskService_GetTasks_FullMethodName, in, out, cOpts...)
+	out := new(NextTask)
+	err := c.cc.Invoke(ctx, TaskManager_FetchTask_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *taskServiceClient) NextStep(ctx context.Context, in *NextStepRequest, opts ...grpc.CallOption) (*Steps, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Steps)
-	err := c.cc.Invoke(ctx, TaskService_NextStep_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *taskServiceClient) UpdateLog(ctx context.Context, in *LogEntry, opts ...grpc.CallOption) (*Empty, error) {
+func (c *taskManagerClient) AppendLog(ctx context.Context, in *LogEntry, opts ...grpc.CallOption) (*Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Empty)
-	err := c.cc.Invoke(ctx, TaskService_UpdateLog_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, TaskManager_AppendLog_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *taskServiceClient) UpdateTaskStatus(ctx context.Context, in *TaskStatus, opts ...grpc.CallOption) (*Empty, error) {
+func (c *taskManagerClient) UploadAsset(ctx context.Context, in *Asset, opts ...grpc.CallOption) (*AssetRef, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Empty)
-	err := c.cc.Invoke(ctx, TaskService_UpdateTaskStatus_FullMethodName, in, out, cOpts...)
+	out := new(AssetRef)
+	err := c.cc.Invoke(ctx, TaskManager_UploadAsset_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *taskServiceClient) UpdateTaskValue(ctx context.Context, in *KeyValueList, opts ...grpc.CallOption) (*Empty, error) {
+func (c *taskManagerClient) WaitForInput(ctx context.Context, in *InputRequest, opts ...grpc.CallOption) (*InputResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Empty)
-	err := c.cc.Invoke(ctx, TaskService_UpdateTaskValue_FullMethodName, in, out, cOpts...)
+	out := new(InputResponse)
+	err := c.cc.Invoke(ctx, TaskManager_WaitForInput_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *taskServiceClient) AgentPing(ctx context.Context, in *AgentSpec, opts ...grpc.CallOption) (*Empty, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Empty)
-	err := c.cc.Invoke(ctx, TaskService_AgentPing_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// TaskServiceServer is the server API for TaskService service.
-// All implementations must embed UnimplementedTaskServiceServer
+// TaskManagerServer is the server API for TaskManager service.
+// All implementations must embed UnimplementedTaskManagerServer
 // for forward compatibility.
-//
-// Service definition
-type TaskServiceServer interface {
-	ExchangeToken(context.Context, *ExchangeTokenRequest) (*Token, error)
-	GetTasks(context.Context, *Empty) (*TaskList, error)
-	NextStep(context.Context, *NextStepRequest) (*Steps, error)
-	UpdateLog(context.Context, *LogEntry) (*Empty, error)
-	UpdateTaskStatus(context.Context, *TaskStatus) (*Empty, error)
-	UpdateTaskValue(context.Context, *KeyValueList) (*Empty, error)
-	AgentPing(context.Context, *AgentSpec) (*Empty, error)
-	mustEmbedUnimplementedTaskServiceServer()
+type TaskManagerServer interface {
+	RegisterSupervisor(context.Context, *SupervisorStats) (*SupervisorConfig, error)
+	FetchTask(context.Context, *RunnerSpec) (*NextTask, error)
+	AppendLog(context.Context, *LogEntry) (*Empty, error)
+	UploadAsset(context.Context, *Asset) (*AssetRef, error)
+	WaitForInput(context.Context, *InputRequest) (*InputResponse, error)
+	mustEmbedUnimplementedTaskManagerServer()
 }
 
-// UnimplementedTaskServiceServer must be embedded to have
+// UnimplementedTaskManagerServer must be embedded to have
 // forward compatible implementations.
 //
 // NOTE: this should be embedded by value instead of pointer to avoid a nil
 // pointer dereference when methods are called.
-type UnimplementedTaskServiceServer struct{}
+type UnimplementedTaskManagerServer struct{}
 
-func (UnimplementedTaskServiceServer) ExchangeToken(context.Context, *ExchangeTokenRequest) (*Token, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ExchangeToken not implemented")
+func (UnimplementedTaskManagerServer) RegisterSupervisor(context.Context, *SupervisorStats) (*SupervisorConfig, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RegisterSupervisor not implemented")
 }
-func (UnimplementedTaskServiceServer) GetTasks(context.Context, *Empty) (*TaskList, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetTasks not implemented")
+func (UnimplementedTaskManagerServer) FetchTask(context.Context, *RunnerSpec) (*NextTask, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FetchTask not implemented")
 }
-func (UnimplementedTaskServiceServer) NextStep(context.Context, *NextStepRequest) (*Steps, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method NextStep not implemented")
+func (UnimplementedTaskManagerServer) AppendLog(context.Context, *LogEntry) (*Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AppendLog not implemented")
 }
-func (UnimplementedTaskServiceServer) UpdateLog(context.Context, *LogEntry) (*Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateLog not implemented")
+func (UnimplementedTaskManagerServer) UploadAsset(context.Context, *Asset) (*AssetRef, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UploadAsset not implemented")
 }
-func (UnimplementedTaskServiceServer) UpdateTaskStatus(context.Context, *TaskStatus) (*Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateTaskStatus not implemented")
+func (UnimplementedTaskManagerServer) WaitForInput(context.Context, *InputRequest) (*InputResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method WaitForInput not implemented")
 }
-func (UnimplementedTaskServiceServer) UpdateTaskValue(context.Context, *KeyValueList) (*Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateTaskValue not implemented")
-}
-func (UnimplementedTaskServiceServer) AgentPing(context.Context, *AgentSpec) (*Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AgentPing not implemented")
-}
-func (UnimplementedTaskServiceServer) mustEmbedUnimplementedTaskServiceServer() {}
-func (UnimplementedTaskServiceServer) testEmbeddedByValue()                     {}
+func (UnimplementedTaskManagerServer) mustEmbedUnimplementedTaskManagerServer() {}
+func (UnimplementedTaskManagerServer) testEmbeddedByValue()                     {}
 
-// UnsafeTaskServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to TaskServiceServer will
+// UnsafeTaskManagerServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to TaskManagerServer will
 // result in compilation errors.
-type UnsafeTaskServiceServer interface {
-	mustEmbedUnimplementedTaskServiceServer()
+type UnsafeTaskManagerServer interface {
+	mustEmbedUnimplementedTaskManagerServer()
 }
 
-func RegisterTaskServiceServer(s grpc.ServiceRegistrar, srv TaskServiceServer) {
-	// If the following call pancis, it indicates UnimplementedTaskServiceServer was
+func RegisterTaskManagerServer(s grpc.ServiceRegistrar, srv TaskManagerServer) {
+	// If the following call pancis, it indicates UnimplementedTaskManagerServer was
 	// embedded by pointer and is nil.  This will cause panics if an
 	// unimplemented method is ever invoked, so we test this at initialization
 	// time to prevent it from happening at runtime later due to I/O.
 	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
 		t.testEmbeddedByValue()
 	}
-	s.RegisterService(&TaskService_ServiceDesc, srv)
+	s.RegisterService(&TaskManager_ServiceDesc, srv)
 }
 
-func _TaskService_ExchangeToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ExchangeTokenRequest)
+func _TaskManager_RegisterSupervisor_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SupervisorStats)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TaskServiceServer).ExchangeToken(ctx, in)
+		return srv.(TaskManagerServer).RegisterSupervisor(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TaskService_ExchangeToken_FullMethodName,
+		FullMethod: TaskManager_RegisterSupervisor_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TaskServiceServer).ExchangeToken(ctx, req.(*ExchangeTokenRequest))
+		return srv.(TaskManagerServer).RegisterSupervisor(ctx, req.(*SupervisorStats))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TaskService_GetTasks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Empty)
+func _TaskManager_FetchTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RunnerSpec)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TaskServiceServer).GetTasks(ctx, in)
+		return srv.(TaskManagerServer).FetchTask(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TaskService_GetTasks_FullMethodName,
+		FullMethod: TaskManager_FetchTask_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TaskServiceServer).GetTasks(ctx, req.(*Empty))
+		return srv.(TaskManagerServer).FetchTask(ctx, req.(*RunnerSpec))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TaskService_NextStep_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(NextStepRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(TaskServiceServer).NextStep(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: TaskService_NextStep_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TaskServiceServer).NextStep(ctx, req.(*NextStepRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _TaskService_UpdateLog_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _TaskManager_AppendLog_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(LogEntry)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TaskServiceServer).UpdateLog(ctx, in)
+		return srv.(TaskManagerServer).AppendLog(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TaskService_UpdateLog_FullMethodName,
+		FullMethod: TaskManager_AppendLog_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TaskServiceServer).UpdateLog(ctx, req.(*LogEntry))
+		return srv.(TaskManagerServer).AppendLog(ctx, req.(*LogEntry))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TaskService_UpdateTaskStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TaskStatus)
+func _TaskManager_UploadAsset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Asset)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TaskServiceServer).UpdateTaskStatus(ctx, in)
+		return srv.(TaskManagerServer).UploadAsset(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TaskService_UpdateTaskStatus_FullMethodName,
+		FullMethod: TaskManager_UploadAsset_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TaskServiceServer).UpdateTaskStatus(ctx, req.(*TaskStatus))
+		return srv.(TaskManagerServer).UploadAsset(ctx, req.(*Asset))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TaskService_UpdateTaskValue_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(KeyValueList)
+func _TaskManager_WaitForInput_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InputRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TaskServiceServer).UpdateTaskValue(ctx, in)
+		return srv.(TaskManagerServer).WaitForInput(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TaskService_UpdateTaskValue_FullMethodName,
+		FullMethod: TaskManager_WaitForInput_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TaskServiceServer).UpdateTaskValue(ctx, req.(*KeyValueList))
+		return srv.(TaskManagerServer).WaitForInput(ctx, req.(*InputRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TaskService_AgentPing_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AgentSpec)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(TaskServiceServer).AgentPing(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: TaskService_AgentPing_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TaskServiceServer).AgentPing(ctx, req.(*AgentSpec))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-// TaskService_ServiceDesc is the grpc.ServiceDesc for TaskService service.
+// TaskManager_ServiceDesc is the grpc.ServiceDesc for TaskManager service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var TaskService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "api.TaskService",
-	HandlerType: (*TaskServiceServer)(nil),
+var TaskManager_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "api.TaskManager",
+	HandlerType: (*TaskManagerServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "ExchangeToken",
-			Handler:    _TaskService_ExchangeToken_Handler,
+			MethodName: "RegisterSupervisor",
+			Handler:    _TaskManager_RegisterSupervisor_Handler,
 		},
 		{
-			MethodName: "GetTasks",
-			Handler:    _TaskService_GetTasks_Handler,
+			MethodName: "FetchTask",
+			Handler:    _TaskManager_FetchTask_Handler,
 		},
 		{
-			MethodName: "NextStep",
-			Handler:    _TaskService_NextStep_Handler,
+			MethodName: "AppendLog",
+			Handler:    _TaskManager_AppendLog_Handler,
 		},
 		{
-			MethodName: "UpdateLog",
-			Handler:    _TaskService_UpdateLog_Handler,
+			MethodName: "UploadAsset",
+			Handler:    _TaskManager_UploadAsset_Handler,
 		},
 		{
-			MethodName: "UpdateTaskStatus",
-			Handler:    _TaskService_UpdateTaskStatus_Handler,
-		},
-		{
-			MethodName: "UpdateTaskValue",
-			Handler:    _TaskService_UpdateTaskValue_Handler,
-		},
-		{
-			MethodName: "AgentPing",
-			Handler:    _TaskService_AgentPing_Handler,
+			MethodName: "WaitForInput",
+			Handler:    _TaskManager_WaitForInput_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

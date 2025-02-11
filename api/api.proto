@@ -1,64 +1,93 @@
 syntax = "proto3";
 
 package api;
-
 option go_package = "./api";
-
-// Service definition
-service TaskService {
-  rpc ExchangeToken (ExchangeTokenRequest) returns (Token);
-  rpc GetTasks (Empty) returns (TaskList);
-  rpc NextStep (NextStepRequest) returns (Steps);
-  rpc UpdateLog (LogEntry) returns (Empty);
-  rpc UpdateTaskStatus (TaskStatus) returns (Empty);
-  rpc UpdateTaskValue (KeyValueList) returns (Empty);
-  rpc AgentPing(AgentSpec) returns (Empty);
+service TaskManager {
+  rpc RegisterSupervisor(SupervisorStats) returns (SupervisorConfig);
+  rpc FetchTask(RunnerSpec) returns (NextTask);
+  rpc AppendLog(LogEntry) returns (Empty);
+  rpc UploadAsset(Asset) returns (AssetRef);
+  rpc WaitForInput(InputRequest) returns (InputResponse);
 }
 
-// Message definitions
-message Token {
-    string jwt = 1;
+message Empty{
+
 }
 
-message AgentSpec {
-    string name = 1;
-    repeated string labels = 2;
-    string version = 3;
+message SupervisorStats {
+  string os = 1;
+  string architecture = 2;
 }
 
-message ExchangeTokenRequest {
-    string use = 2;
+message SupervisorConfig {
+  string refresh_token = 1;
+  string runner_sha256 = 2;
+  string runner_download_url = 3;
 }
 
-message TaskList {
-    repeated Task tasks = 1;
+message RunnerSpec {
+  string os = 1;
+  string architecture = 2;
+  string runner_id = 3;
+  string supervisor_id = 4;
+  int64 runner_uptime = 5;
 }
 
-message Task {
-    string id = 1;
-    string interpreter = 2;
+message NextTask {
+  string task_id = 1;
+  string shell_script = 2;
+  map<string, string> user_parameters = 3;
+  int64 ttl = 4;
+  string access_token = 5;
 }
 
-message NextStepRequest {
-    string task_id = 1;
-    int32 previous_step = 2;
+message LogEntry {
+  string task_id = 1;
+  string stage_name = 2;
+  string stage_id = 3;
+  string parent_stage_id = 4;
+  repeated bytes stdout = 5;
+  repeated bytes stderr = 6;
+  repeated string command = 7;
+  string step_id = 8;
 }
 
-message Steps {
-    repeated Step steps = 1;
-    bool completed = 2;
-    int32 retryOnSecs = 3;
+message Asset {
+  string task_id = 1;
+  string asset_path = 2;
+  bytes content = 3;
+  optional string content_url = 4;
 }
 
-message Step {
-    int32 index = 1;
-    string instructions = 2;
+message AssetRef {
+  string reference_id = 1;
 }
 
-message LogEntry {}
+message InputRequest {
+  map<string, InputField> fields = 1;
+  string title = 2;
+  string description = 3;
+}
 
-message TaskStatus {}
+message InputField {
+  string step_id = 1;
+  string name = 2;
+  string title = 3;
+  string description = 4;
+  string kind = 5;
+  bool required = 6;
+  repeated OptionValue options = 7;
+  string options_script = 8;
+  string options_url = 9;
+}
 
-message KeyValueList {}
+message OptionValue {
+  string name = 1;
+  string value = 2;
+  string label = 3;
+}
 
-message Empty {}
+message InputResponse {
+  map<string, string> responses = 1;
+  string step_id = 2;
+}
