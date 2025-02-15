@@ -14,7 +14,7 @@ import (
 	"golang.zx2c4.com/wireguard/tun/netstack"
 )
 
-func runClient() {
+func runClient(binder func() (conn.Bind, error)) {
 	tun, tnet, err := netstack.CreateNetTUN(
 		[]netip.Addr{netip.MustParseAddr("192.168.4.28")},
 		[]netip.Addr{netip.MustParseAddr("8.8.8.8")},
@@ -22,7 +22,11 @@ func runClient() {
 	if err != nil {
 		log.Panic(err)
 	}
-	dev := device.NewDevice(tun, NewDebugBind(conn.NewDefaultBind()), device.NewLogger(device.LogLevelError, ""))
+	bind, err := binder()
+	if err != nil {
+		log.Panic(err)
+	}
+	dev := device.NewDevice(tun, bind, device.NewLogger(device.LogLevelError, ""))
 	err = dev.IpcSet(`private_key=087ec6e14bbed210e7215cdc73468dfa23f080a1bfb8665b2fd809bd99d28379
 public_key=c4c8e984c5322c8184c72265b92b250fdb63688705f504ba003c88f03393cf28
 allowed_ip=0.0.0.0/0
