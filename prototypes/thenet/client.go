@@ -14,24 +14,23 @@ import (
 	"golang.zx2c4.com/wireguard/tun/netstack"
 )
 
-func runClient(binder func() (conn.Bind, error)) {
+func runClient(addr string, privateKey string, nodes []Node, bind conn.Bind) {
 	tun, tnet, err := netstack.CreateNetTUN(
-		[]netip.Addr{netip.MustParseAddr("192.168.4.28")},
+		[]netip.Addr{netip.MustParseAddr(addr)},
 		[]netip.Addr{netip.MustParseAddr("8.8.8.8")},
 		1420)
 	if err != nil {
 		log.Panic(err)
 	}
-	bind, err := binder()
-	if err != nil {
-		log.Panic(err)
-	}
 	dev := device.NewDevice(tun, bind, device.NewLogger(device.LogLevelError, ""))
-	err = dev.IpcSet(`private_key=087ec6e14bbed210e7215cdc73468dfa23f080a1bfb8665b2fd809bd99d28379
-public_key=c4c8e984c5322c8184c72265b92b250fdb63688705f504ba003c88f03393cf28
-allowed_ip=0.0.0.0/0
-endpoint=127.0.0.1:58120
-`)
+	err = dev.IpcSet(`private_key=` + privateKey)
+	if err != nil {
+		log.Panicln(err)
+	}
+	for _, n := range nodes {
+		dev.IpcSet(fmt.Sprintf("public_key=%v\nallowed_ip=%v/32\nendpoint=%v\npersistent_keepalive_interval=25\n",
+			n.Key, n.Addr, n.Addr))
+	}
 	err = dev.Up()
 	if err != nil {
 		log.Panic(err)

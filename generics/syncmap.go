@@ -16,6 +16,20 @@ func (s *SyncMap[K, V]) Put(k K, v V) (V, bool) {
 	return s.update(k, v, false)
 }
 
+func (s *SyncMap[K, V]) Use(k K, fn func(v V)) bool {
+	s.l.RLock()
+	defer s.l.RUnlock()
+	if s.items == nil {
+		return false
+	}
+	val, found := s.items[k]
+	if !found {
+		return false
+	}
+	fn(val)
+	return true
+}
+
 func (s *SyncMap[K, V]) Update(k K, fn func(v V, present bool) (newval V, keep bool)) {
 	s.l.Lock()
 	defer s.l.Unlock()
