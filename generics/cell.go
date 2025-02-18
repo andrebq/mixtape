@@ -4,10 +4,16 @@ import "sync"
 
 type (
 	Cell[T any] struct {
-		l sync.Locker
+		l sync.RWMutex
 		v T
 	}
 )
+
+func (c *Cell[T]) Use(fn func(T)) {
+	c.l.Lock()
+	defer c.l.Unlock()
+	fn(c.v)
+}
 
 func (c *Cell[T]) Put(v T) T {
 	var old T

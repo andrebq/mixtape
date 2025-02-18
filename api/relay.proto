@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package api;
+
+option go_package = "./api";
+
+// Define the Packet message with required fields.
+message Packet {
+    int64 source = 1;
+    int64 destination = 2;
+    bytes content = 3;
+}
+
+message Peer {
+    string virtual_ip = 1;
+    int64 peer_id = 2;
+    string pubkey = 3;
+}
+
+message PeerList {
+    repeated Peer peers = 1;
+}
+
+// Define the Relay service with a streaming method Proxy.
+service Relay {
+    // Register a peer and return all peers connected to the relay
+    rpc RegisterPeer(Peer) returns (PeerList);
+    // The Proxy RPC takes a stream of Packet messages and returns a stream of Packet messages.
+    rpc Proxy(stream Packet) returns (stream Packet);
+}
