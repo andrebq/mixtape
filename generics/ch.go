@@ -8,3 +8,15 @@ func NonBlockSend[T any](out chan<- T, v T) bool {
 		return false
 	}
 }
+
+func NonBlockRecv[T any](in <-chan T) (val T, received bool, open bool) {
+	select {
+	case val, open = <-in:
+		received = open
+		return
+	default:
+		received = false
+		open = true
+		return
+	}
+}

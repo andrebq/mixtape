@@ -83,7 +83,7 @@ func (s *SyncMap[K, V]) update(k K, v V, del bool) (V, bool) {
 	if s.items == nil && del {
 		s.l.Unlock()
 		return v, false
-	} else if !del {
+	} else if !del && s.items == nil {
 		s.items = map[K]V{}
 	}
 	oldv, found := s.items[k]

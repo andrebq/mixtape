@@ -8,7 +8,7 @@ import (
 	"reflect"
 
 	"github.com/jmoiron/sqlx"
-	_ "modernc.org/sqlite"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type (
@@ -19,9 +19,9 @@ func (e ErrNotMapped) Error() string {
 	return fmt.Sprintf("type %v is not known to store registry, did you call MustRegister", e.Type)
 }
 
-func tableExists(db *sqlx.DB, tableName string) (bool, error) {
+func tableExists(ctx context.Context, db sqlx.ExtContext, tableName string) (bool, error) {
 	query := "SELECT name FROM sqlite_master WHERE type='table' AND name=?;"
-	row := db.QueryRow(query, tableName)
+	row := db.QueryRowxContext(ctx, query, tableName)
 	var name string
 	err := row.Scan(&name)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -30,9 +30,9 @@ func tableExists(db *sqlx.DB, tableName string) (bool, error) {
 	return name != "", nil
 }
 
-func getExistingColumns(db *sqlx.DB, tableName string) (map[string]string, error) {
+func getExistingColumns(ctx context.Context, db sqlx.ExtContext, tableName string) (map[string]string, error) {
 	columns := make(map[string]string)
-	rows, err := db.Query(fmt.Sprintf("PRAGMA table_info(%s);", tableName))
+	rows, err := db.QueryContext(ctx, fmt.Sprintf("PRAGMA table_info(%s);", tableName))
 	if err != nil {
 		return nil, err
 	}
@@ -51,35 +51,37 @@ func getExistingColumns(db *sqlx.DB, tableName string) (map[string]string, error
 	return columns, nil
 }
 
-func Migrate(ctx context.Context, db *sqlx.DB, typeInfo reflect.Type) error {
-	mapping, _ := registry.Get(typeInfo)
-	if mapping == nil {
-		return ErrNotMapped{typeInfo}
-	}
-	tableName := mapping.tableName
-	existingColumns, err := getExistingColumns(db, tableName)
-	if err != nil {
-		return err
-	}
-
-	tableExists, err := tableExists(db, tableName)
-	if err != nil {
-		return err
-	}
-
-	if !tableExists {
-		_, err := db.Exec(mapping.createStatement)
+func Migrate(ctx context.Context, db sqlx.ExtContext, types ...reflect.Type) error {
+	for _, typeInfo := range types {
+		mapping, _ := registry.Get(typeInfo)
+		if mapping == nil {
+			return ErrNotMapped{typeInfo}
+		}
+		tableName := mapping.tableName
+		existingColumns, err := getExistingColumns(ctx, db, tableName)
 		if err != nil {
 			return err
 		}
-	} else {
-		for k, stmt := range mapping.alterStatements {
-			if _, found := existingColumns[k]; found {
-				continue
-			}
-			_, err := db.Exec(stmt)
+
+		tableExists, err := tableExists(ctx, db, tableName)
+		if err != nil {
+			return err
+		}
+
+		if !tableExists {
+			_, err := db.ExecContext(ctx, mapping.createStatement)
 			if err != nil {
 				return err
+			}
+		} else {
+			for k, stmt := range mapping.alterStatements {
+				if _, found := existingColumns[k]; found {
+					continue
+				}
+				_, err := db.ExecContext(ctx, stmt)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}

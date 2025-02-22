@@ -3,50 +3,60 @@ package taskman
 import (
 	"context"
 	"errors"
-	"log/slog"
-	"net/http"
+	"path/filepath"
+	"reflect"
 
 	"github.com/andrebq/mixtape/api"
-	"google.golang.org/grpc"
+	"github.com/andrebq/mixtape/prototypes/store"
+	"github.com/andrebq/mixtape/taskman/records"
+	"github.com/jmoiron/sqlx"
 )
 
 type (
-	TaskManagerServer struct {
-		api.UnsafeTaskManagerServer
+	Server struct {
+		api.UnimplementedTaskManagerServer
+		db *sqlx.DB
+	}
+
+	agentRecord struct {
 	}
 )
 
-func (s *TaskManagerServer) RegisterSupervisor(ctx context.Context, req *api.SupervisorStats) (*api.SupervisorConfig, error) {
-	slog.InfoContext(ctx, "RegisterSupervisor called")
-	return &api.SupervisorConfig{}, nil
+func init() {
+	records.RegisterTypes()
 }
 
-func (s *TaskManagerServer) FetchTask(ctx context.Context, req *api.RunnerSpec) (*api.NextTask, error) {
-	slog.InfoContext(ctx, "FetchTask called")
-	return &api.NextTask{}, nil
+func NewServer(ctx context.Context, dir string) (*Server, error) {
+	var err error
+	s := Server{}
+	s.db, err = store.OpenDB(filepath.Join(dir, "taskman", "core.db"))
+	if err != nil {
+		return nil, err
+	}
+	err = store.Migrate(ctx, s.db, reflect.TypeFor[records.Agent]())
+	if err != nil {
+		return nil, err
+	}
+	return &s, nil
 }
 
-func (s *TaskManagerServer) AppendLog(ctx context.Context, req *api.LogEntry) (*api.Empty, error) {
-	slog.InfoContext(ctx, "Appendslog called")
-	return &api.Empty{}, nil
+func (s *Server) Close() error {
+	return s.db.Close()
 }
 
-func (s *TaskManagerServer) UploadAsset(ctx context.Context, req *api.Asset) (*api.AssetRef, error) {
-	slog.InfoContext(ctx, "UploadAsset called")
-	return &api.AssetRef{}, nil
+func (s *Server) ListAgents(context.Context, *api.Empty) (*api.AgentList, error) {
+	return nil, errors.ErrUnsupported
 }
 
-func (s *TaskManagerServer) WaitForInput(ctx context.Context, req *api.InputRequest) (*api.InputResponse, error) {
-	slog.InfoContext(ctx, "WaitForInput called")
-	return &api.InputResponse{}, nil
+func (s *Server) ScheduleTask(context.Context, *api.NewTask) (*api.Empty, error) {
+	return nil, errors.ErrUnsupported
 }
-
-func GenAgentToken(name string, minLabels []string) (string, error) {
-	return "", errors.ErrUnsupported
+func (s *Server) RegisterAgent(context.Context, *api.AgentDetails) (*api.AgentDetails, error) {
+	return nil, errors.ErrUnsupported
 }
-
-func Handler() (http.Handler, error) {
-	server := grpc.NewServer()
-	api.RegisterTaskManagerServer(server, &TaskManagerServer{})
-	return server, nil
+func (s *Server) NextTask(context.Context, *api.AgentIdentity) (*api.TaskDetails, error) {
+	return nil, errors.ErrUnsupported
+}
+func (s *Server) AppendLog(context.Context, *api.LogEntry) (*api.Empty, error) {
+	return nil, errors.ErrUnsupported
 }

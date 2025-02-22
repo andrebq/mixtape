@@ -19,22 +19,22 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	TaskManager_RegisterSupervisor_FullMethodName = "/api.TaskManager/RegisterSupervisor"
-	TaskManager_FetchTask_FullMethodName          = "/api.TaskManager/FetchTask"
-	TaskManager_AppendLog_FullMethodName          = "/api.TaskManager/AppendLog"
-	TaskManager_UploadAsset_FullMethodName        = "/api.TaskManager/UploadAsset"
-	TaskManager_WaitForInput_FullMethodName       = "/api.TaskManager/WaitForInput"
+	TaskManager_RegisterAgent_FullMethodName = "/api.TaskManager/RegisterAgent"
+	TaskManager_ListAgents_FullMethodName    = "/api.TaskManager/ListAgents"
+	TaskManager_ScheduleTask_FullMethodName  = "/api.TaskManager/ScheduleTask"
+	TaskManager_NextTask_FullMethodName      = "/api.TaskManager/NextTask"
+	TaskManager_AppendLog_FullMethodName     = "/api.TaskManager/AppendLog"
 )
 
 // TaskManagerClient is the client API for TaskManager service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TaskManagerClient interface {
-	RegisterSupervisor(ctx context.Context, in *SupervisorStats, opts ...grpc.CallOption) (*SupervisorConfig, error)
-	FetchTask(ctx context.Context, in *RunnerSpec, opts ...grpc.CallOption) (*NextTask, error)
+	RegisterAgent(ctx context.Context, in *AgentDetails, opts ...grpc.CallOption) (*AgentDetails, error)
+	ListAgents(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*AgentList, error)
+	ScheduleTask(ctx context.Context, in *NewTask, opts ...grpc.CallOption) (*Empty, error)
+	NextTask(ctx context.Context, in *AgentIdentity, opts ...grpc.CallOption) (*TaskDetails, error)
 	AppendLog(ctx context.Context, in *LogEntry, opts ...grpc.CallOption) (*Empty, error)
-	UploadAsset(ctx context.Context, in *Asset, opts ...grpc.CallOption) (*AssetRef, error)
-	WaitForInput(ctx context.Context, in *InputRequest, opts ...grpc.CallOption) (*InputResponse, error)
 }
 
 type taskManagerClient struct {
@@ -45,20 +45,40 @@ func NewTaskManagerClient(cc grpc.ClientConnInterface) TaskManagerClient {
 	return &taskManagerClient{cc}
 }
 
-func (c *taskManagerClient) RegisterSupervisor(ctx context.Context, in *SupervisorStats, opts ...grpc.CallOption) (*SupervisorConfig, error) {
+func (c *taskManagerClient) RegisterAgent(ctx context.Context, in *AgentDetails, opts ...grpc.CallOption) (*AgentDetails, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SupervisorConfig)
-	err := c.cc.Invoke(ctx, TaskManager_RegisterSupervisor_FullMethodName, in, out, cOpts...)
+	out := new(AgentDetails)
+	err := c.cc.Invoke(ctx, TaskManager_RegisterAgent_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *taskManagerClient) FetchTask(ctx context.Context, in *RunnerSpec, opts ...grpc.CallOption) (*NextTask, error) {
+func (c *taskManagerClient) ListAgents(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*AgentList, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(NextTask)
-	err := c.cc.Invoke(ctx, TaskManager_FetchTask_FullMethodName, in, out, cOpts...)
+	out := new(AgentList)
+	err := c.cc.Invoke(ctx, TaskManager_ListAgents_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *taskManagerClient) ScheduleTask(ctx context.Context, in *NewTask, opts ...grpc.CallOption) (*Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Empty)
+	err := c.cc.Invoke(ctx, TaskManager_ScheduleTask_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *taskManagerClient) NextTask(ctx context.Context, in *AgentIdentity, opts ...grpc.CallOption) (*TaskDetails, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TaskDetails)
+	err := c.cc.Invoke(ctx, TaskManager_NextTask_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -75,35 +95,15 @@ func (c *taskManagerClient) AppendLog(ctx context.Context, in *LogEntry, opts ..
 	return out, nil
 }
 
-func (c *taskManagerClient) UploadAsset(ctx context.Context, in *Asset, opts ...grpc.CallOption) (*AssetRef, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AssetRef)
-	err := c.cc.Invoke(ctx, TaskManager_UploadAsset_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *taskManagerClient) WaitForInput(ctx context.Context, in *InputRequest, opts ...grpc.CallOption) (*InputResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(InputResponse)
-	err := c.cc.Invoke(ctx, TaskManager_WaitForInput_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // TaskManagerServer is the server API for TaskManager service.
 // All implementations must embed UnimplementedTaskManagerServer
 // for forward compatibility.
 type TaskManagerServer interface {
-	RegisterSupervisor(context.Context, *SupervisorStats) (*SupervisorConfig, error)
-	FetchTask(context.Context, *RunnerSpec) (*NextTask, error)
+	RegisterAgent(context.Context, *AgentDetails) (*AgentDetails, error)
+	ListAgents(context.Context, *Empty) (*AgentList, error)
+	ScheduleTask(context.Context, *NewTask) (*Empty, error)
+	NextTask(context.Context, *AgentIdentity) (*TaskDetails, error)
 	AppendLog(context.Context, *LogEntry) (*Empty, error)
-	UploadAsset(context.Context, *Asset) (*AssetRef, error)
-	WaitForInput(context.Context, *InputRequest) (*InputResponse, error)
 	mustEmbedUnimplementedTaskManagerServer()
 }
 
@@ -114,20 +114,20 @@ type TaskManagerServer interface {
 // pointer dereference when methods are called.
 type UnimplementedTaskManagerServer struct{}
 
-func (UnimplementedTaskManagerServer) RegisterSupervisor(context.Context, *SupervisorStats) (*SupervisorConfig, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RegisterSupervisor not implemented")
+func (UnimplementedTaskManagerServer) RegisterAgent(context.Context, *AgentDetails) (*AgentDetails, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RegisterAgent not implemented")
 }
-func (UnimplementedTaskManagerServer) FetchTask(context.Context, *RunnerSpec) (*NextTask, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method FetchTask not implemented")
+func (UnimplementedTaskManagerServer) ListAgents(context.Context, *Empty) (*AgentList, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListAgents not implemented")
+}
+func (UnimplementedTaskManagerServer) ScheduleTask(context.Context, *NewTask) (*Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ScheduleTask not implemented")
+}
+func (UnimplementedTaskManagerServer) NextTask(context.Context, *AgentIdentity) (*TaskDetails, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method NextTask not implemented")
 }
 func (UnimplementedTaskManagerServer) AppendLog(context.Context, *LogEntry) (*Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AppendLog not implemented")
-}
-func (UnimplementedTaskManagerServer) UploadAsset(context.Context, *Asset) (*AssetRef, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UploadAsset not implemented")
-}
-func (UnimplementedTaskManagerServer) WaitForInput(context.Context, *InputRequest) (*InputResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method WaitForInput not implemented")
 }
 func (UnimplementedTaskManagerServer) mustEmbedUnimplementedTaskManagerServer() {}
 func (UnimplementedTaskManagerServer) testEmbeddedByValue()                     {}
@@ -150,38 +150,74 @@ func RegisterTaskManagerServer(s grpc.ServiceRegistrar, srv TaskManagerServer) {
 	s.RegisterService(&TaskManager_ServiceDesc, srv)
 }
 
-func _TaskManager_RegisterSupervisor_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SupervisorStats)
+func _TaskManager_RegisterAgent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AgentDetails)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TaskManagerServer).RegisterSupervisor(ctx, in)
+		return srv.(TaskManagerServer).RegisterAgent(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TaskManager_RegisterSupervisor_FullMethodName,
+		FullMethod: TaskManager_RegisterAgent_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TaskManagerServer).RegisterSupervisor(ctx, req.(*SupervisorStats))
+		return srv.(TaskManagerServer).RegisterAgent(ctx, req.(*AgentDetails))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TaskManager_FetchTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RunnerSpec)
+func _TaskManager_ListAgents_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TaskManagerServer).FetchTask(ctx, in)
+		return srv.(TaskManagerServer).ListAgents(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TaskManager_FetchTask_FullMethodName,
+		FullMethod: TaskManager_ListAgents_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TaskManagerServer).FetchTask(ctx, req.(*RunnerSpec))
+		return srv.(TaskManagerServer).ListAgents(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TaskManager_ScheduleTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NewTask)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TaskManagerServer).ScheduleTask(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TaskManager_ScheduleTask_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskManagerServer).ScheduleTask(ctx, req.(*NewTask))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TaskManager_NextTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AgentIdentity)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TaskManagerServer).NextTask(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TaskManager_NextTask_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskManagerServer).NextTask(ctx, req.(*AgentIdentity))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -204,42 +240,6 @@ func _TaskManager_AppendLog_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TaskManager_UploadAsset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Asset)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(TaskManagerServer).UploadAsset(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: TaskManager_UploadAsset_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TaskManagerServer).UploadAsset(ctx, req.(*Asset))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _TaskManager_WaitForInput_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(InputRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(TaskManagerServer).WaitForInput(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: TaskManager_WaitForInput_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TaskManagerServer).WaitForInput(ctx, req.(*InputRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // TaskManager_ServiceDesc is the grpc.ServiceDesc for TaskManager service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -248,24 +248,24 @@ var TaskManager_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*TaskManagerServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "RegisterSupervisor",
-			Handler:    _TaskManager_RegisterSupervisor_Handler,
+			MethodName: "RegisterAgent",
+			Handler:    _TaskManager_RegisterAgent_Handler,
 		},
 		{
-			MethodName: "FetchTask",
-			Handler:    _TaskManager_FetchTask_Handler,
+			MethodName: "ListAgents",
+			Handler:    _TaskManager_ListAgents_Handler,
+		},
+		{
+			MethodName: "ScheduleTask",
+			Handler:    _TaskManager_ScheduleTask_Handler,
+		},
+		{
+			MethodName: "NextTask",
+			Handler:    _TaskManager_NextTask_Handler,
 		},
 		{
 			MethodName: "AppendLog",
 			Handler:    _TaskManager_AppendLog_Handler,
-		},
-		{
-			MethodName: "UploadAsset",
-			Handler:    _TaskManager_UploadAsset_Handler,
-		},
-		{
-			MethodName: "WaitForInput",
-			Handler:    _TaskManager_WaitForInput_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

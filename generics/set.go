@@ -1,5 +1,7 @@
 package generics
 
+import "slices"
+
 type (
 	Set[T comparable] struct {
 		items map[T]struct{}
@@ -34,6 +36,12 @@ func (s *Set[T]) AppendTo(out []T) []T {
 	for k := range s.items {
 		out = append(out, k)
 	}
+	return out
+}
+
+func (s *Set[T]) AppendToSorted(out []T, cmp func(T, T) int) []T {
+	out = s.AppendTo(out)
+	slices.SortFunc(out, cmp)
 	return out
 }
 

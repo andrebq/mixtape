@@ -12,7 +12,10 @@ type (
 		alterStatements map[string]string
 		createStatement string
 
+		defaultSort string
+
 		insert, delete, lookup string
+		match                  func(map[string]any) (string, map[string]any, error)
 	}
 )
 
@@ -43,6 +46,6 @@ var (
 func MustRegister(tp reflect.Type) {
 	md := mappingData{}
 	genDDL(&md, tp)
-	md.insert, md.delete, md.lookup = generateDMLStatements(md.tableName, tp)
+	md.insert, md.delete, md.lookup, md.match = generateDMLStatements(&md, tp)
 	registry.Put(tp, &md)
 }

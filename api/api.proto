@@ -3,91 +3,54 @@ syntax = "proto3";
 package api;
 option go_package = "./api";
 service TaskManager {
-  rpc RegisterSupervisor(SupervisorStats) returns (SupervisorConfig);
-  rpc FetchTask(RunnerSpec) returns (NextTask);
-  rpc AppendLog(LogEntry) returns (Empty);
-  rpc UploadAsset(Asset) returns (AssetRef);
-  rpc WaitForInput(InputRequest) returns (InputResponse);
+    rpc RegisterAgent(AgentDetails) returns (AgentDetails);
+    rpc ListAgents(Empty) returns (AgentList);
+    rpc ScheduleTask(NewTask) returns (Empty);
+    rpc NextTask(AgentIdentity) returns (TaskDetails);
+    rpc AppendLog(LogEntry) returns (Empty);
 }
 
-message Empty{
-
+message AgentList {
+    repeated AgentDetails agent = 1;
 }
 
-message SupervisorStats {
-  string os = 1;
-  string architecture = 2;
+message NewTask {
+    AgentIdentity identity = 1;
+    int64 timeout_seconds = 2;
+    string instructions = 3;
+    repeated KeyValue fields = 4;
 }
 
-message SupervisorConfig {
-  string refresh_token = 1;
-  string runner_sha256 = 2;
-  string runner_download_url = 3;
+message AgentDetails {
+    AgentIdentity identity = 1;
+    string name = 2;
+    repeated string executors = 3;
+    int32 maxConcurrent = 4;
 }
 
-message RunnerSpec {
-  string os = 1;
-  string architecture = 2;
-  string runner_id = 3;
-  string supervisor_id = 4;
-  int64 runner_uptime = 5;
+message AgentIdentity {
+    string id = 1;
 }
 
-message NextTask {
-  string task_id = 1;
-  string shell_script = 2;
-  map<string, string> user_parameters = 3;
-  int64 ttl = 4;
-  string access_token = 5;
+message TaskDetails {
+    string task_id = 1;
+    string executor = 2;
+    string access_token = 3;
+    int64 timeout_seconds = 4;
+    string instructions = 5;
+    repeated KeyValue fields = 6;
 }
+
+message Empty {}
 
 message LogEntry {
-  string task_id = 1;
-  string stage_name = 2;
-  string stage_id = 3;
-  string parent_stage_id = 4;
-  repeated bytes stdout = 5;
-  repeated bytes stderr = 6;
-  repeated string command = 7;
-  string step_id = 8;
+    string task_id = 1;
+    repeated string stdout = 2;
+    repeated string stderr = 3;
+    repeated KeyValue fields = 4;
 }
 
-message Asset {
-  string task_id = 1;
-  string asset_path = 2;
-  bytes content = 3;
-  optional string content_url = 4;
-}
-
-message AssetRef {
-  string reference_id = 1;
-}
-
-message InputRequest {
-  map<string, InputField> fields = 1;
-  string title = 2;
-  string description = 3;
-}
-
-message InputField {
-  string step_id = 1;
-  string name = 2;
-  string title = 3;
-  string description = 4;
-  string kind = 5;
-  bool required = 6;
-  repeated OptionValue options = 7;
-  string options_script = 8;
-  string options_url = 9;
-}
-
-message OptionValue {
-  string name = 1;
-  string value = 2;
-  string label = 3;
-}
-
-message InputResponse {
-  map<string, string> responses = 1;
-  string step_id = 2;
+message KeyValue {
+    string key = 1;
+    repeated string values = 2;
 }
