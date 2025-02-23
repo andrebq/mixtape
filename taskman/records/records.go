@@ -12,7 +12,7 @@ type (
 		ID            string         `db:"id" ddl:"type=text,primary key"`
 		Name          string         `db:"name" ddl:"not null"`
 		Executors     store.JSONBlob `db:"executors" ddl:"not null"`
-		MaxConcurrent int32          `db:"max_concurrent" ddl:"not null"`
+		MaxConcurrent int64          `db:"max_concurrent" ddl:"not null"`
 		Active        bool           `db:"active" ddl:"not null"`
 	}
 

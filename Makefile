@@ -13,8 +13,5 @@ test:
 build:
 	go build -o dist/mixtape ./cmd/mixtape
 
-build-prototypes:
-	go build -o prototypes/thenet ./prototypes/thenet
-
 run:
 	./cmd/mixtape

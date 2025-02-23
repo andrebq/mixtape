@@ -2,11 +2,13 @@ package taskman
 
 import (
 	"context"
-	"errors"
+	"encoding/json"
+	"log/slog"
 	"path/filepath"
 	"reflect"
 
-	"github.com/andrebq/mixtape/api"
+	"github.com/andrebq/mixtape/generics"
+	"github.com/andrebq/mixtape/internal/rpc"
 	"github.com/andrebq/mixtape/prototypes/store"
 	"github.com/andrebq/mixtape/taskman/records"
 	"github.com/jmoiron/sqlx"
@@ -14,11 +16,7 @@ import (
 
 type (
 	Server struct {
-		api.UnimplementedTaskManagerServer
 		db *sqlx.DB
-	}
-
-	agentRecord struct {
 	}
 )
 
@@ -40,23 +38,52 @@ func NewServer(ctx context.Context, dir string) (*Server, error) {
 	return &s, nil
 }
 
+func (s *Server) AsActor(actor *rpc.Actor) {
+	rpc.AddMethod(actor, "ListAgents", s.ListAgents)
+	rpc.AddMethod(actor, "RegisterAgent", s.RegisterAgent)
+}
+
 func (s *Server) Close() error {
 	return s.db.Close()
 }
 
-func (s *Server) ListAgents(context.Context, *api.Empty) (*api.AgentList, error) {
-	return nil, errors.ErrUnsupported
+func (s *Server) ListAgents(ctx context.Context, _ struct{}) ([]AgentDetails, error) {
+	activeAgents, err := store.Match(ctx, []records.Agent(nil), s.db, map[string]any{
+		"Active": true,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return generics.Transform(activeAgents, []AgentDetails(nil), func(a records.Agent) AgentDetails {
+		var executors []string
+		if err := json.Unmarshal(a.Executors, &executors); err != nil {
+			slog.ErrorContext(ctx, "Unable to decode executor list for agent, will default to empty", "agent.ID", a.ID, "err", err)
+		}
+		return AgentDetails{
+			Name:          a.Name,
+			ID:            a.ID,
+			Executors:     executors,
+			MaxConcurrent: a.MaxConcurrent,
+		}
+	}), nil
 }
 
-func (s *Server) ScheduleTask(context.Context, *api.NewTask) (*api.Empty, error) {
-	return nil, errors.ErrUnsupported
-}
-func (s *Server) RegisterAgent(context.Context, *api.AgentDetails) (*api.AgentDetails, error) {
-	return nil, errors.ErrUnsupported
-}
-func (s *Server) NextTask(context.Context, *api.AgentIdentity) (*api.TaskDetails, error) {
-	return nil, errors.ErrUnsupported
-}
-func (s *Server) AppendLog(context.Context, *api.LogEntry) (*api.Empty, error) {
-	return nil, errors.ErrUnsupported
+func (s *Server) RegisterAgent(ctx context.Context, details *AgentDetails) (*AgentDetails, error) {
+	// TODO: add some validation here
+	a := records.Agent{
+		Name:          details.Name,
+		ID:            details.ID,
+		MaxConcurrent: details.MaxConcurrent,
+		Active:        true,
+	}
+	buf, err := json.Marshal(details.Executors)
+	if err != nil {
+		return nil, err
+	}
+	a.Executors = buf
+	err = store.Upsert(ctx, s.db, a)
+	if err != nil {
+		return nil, err
+	}
+	return details, nil
 }
