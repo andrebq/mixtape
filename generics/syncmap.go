@@ -62,6 +62,16 @@ func (s *SyncMap[K, V]) Delete(k K) (V, bool) {
 	return s.update(k, zero, true)
 }
 
+func (s *SyncMap[K, V]) Len() int {
+	var sz int
+	s.l.RLock()
+	sz = len(s.items)
+	s.l.RUnlock()
+	return sz
+}
+
+func (s *SyncMap[K, V]) Empty() bool { return s.Len() == 0 }
+
 func (s *SyncMap[K, V]) LockedIter() iter.Seq2[K, V] {
 	return func(yield func(K, V) bool) {
 		s.l.RLock()
