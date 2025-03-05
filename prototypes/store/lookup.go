@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"errors"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -50,4 +51,8 @@ func LookupOne[T any](ctx context.Context, tx sqlx.ExtContext, sample T) (T, err
 	}
 	err = rows.StructScan(&zero)
 	return zero, err
+}
+
+func IsNotFound(err error) bool {
+	return errors.Is(err, sql.ErrNoRows)
 }
