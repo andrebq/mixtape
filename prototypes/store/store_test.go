@@ -31,7 +31,7 @@ func TestSQLGen(t *testing.T) {
 	defer db.Close()
 
 	typeInfo := reflect.TypeOf(Task{})
-	store.MustRegister(typeInfo)
+	store.MustRegister[Task]()
 	err = store.Migrate(context.Background(), db, typeInfo)
 	if err != nil {
 		t.Fatal(err)
@@ -58,7 +58,7 @@ func TestSQLGen(t *testing.T) {
 	} else if !errors.Is(err, store.ErrNotMapped{typeInfoV2}) {
 		t.Fatalf("Unexpected error type: %#v", err)
 	}
-	store.MustRegister(typeInfoV2)
+	store.MustRegister[TaskV2]()
 	err = store.Migrate(context.Background(), db, typeInfoV2)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
@@ -103,7 +103,7 @@ func TestPatternMatch(t *testing.T) {
 	defer db.Close()
 
 	typeInfo := reflect.TypeOf(Record{})
-	store.MustRegister(typeInfo)
+	store.MustRegister[Record]()
 	err = store.Migrate(context.Background(), db, typeInfo)
 	if err != nil {
 		t.Fatal(err)

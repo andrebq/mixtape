@@ -26,7 +26,6 @@ type (
 		accepting map[string]*loadbalancer.LB[connData]
 		cleanup   map[*gossh.ServerConn]func()
 		kdb       *DynKDB
-		tdb       *TokenDB
 		adminKey  ssh.PublicKey
 		host      struct {
 			key  ssh.Signer
@@ -84,14 +83,13 @@ func genCASigner(key CAKey) (ssh.Signer, error) {
 	return signerkey, nil
 }
 
-func NewGateway(keydb *DynKDB, tkdb *TokenDB, adminKey ssh.PublicKey, cakey CAKey) (*Gateway, error) {
+func NewGateway(keydb *DynKDB, adminKey ssh.PublicKey, cakey CAKey) (*Gateway, error) {
 	casigner, err := genCASigner(cakey)
 	if err != nil {
 		return nil, err
 	}
 	g := &Gateway{
 		kdb:       keydb,
-		tdb:       tkdb,
 		accepting: make(map[string]*loadbalancer.LB[connData]),
 		cleanup:   make(map[*gossh.ServerConn]func()),
 

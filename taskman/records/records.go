@@ -1,8 +1,6 @@
 package records
 
 import (
-	"reflect"
-
 	"github.com/andrebq/mixtape/prototypes/store"
 )
 
@@ -26,6 +24,6 @@ type (
 )
 
 func RegisterTypes() {
-	store.MustRegister(reflect.TypeFor[Agent]())
-	store.MustRegister(reflect.TypeFor[Task]())
+	store.MustRegister[Agent]()
+	store.MustRegister[Task]()
 }

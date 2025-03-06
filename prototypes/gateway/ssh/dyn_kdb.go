@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"path/filepath"
 	"sort"
 	"time"
 
@@ -78,6 +79,20 @@ func (s *SSHPubKey) UnmarshalJSON(buf []byte) error {
 var (
 	errNotAuthorized = errors.New("ssh: not authorized")
 )
+
+func init() {
+	store.MustRegister[KeyConfig]()
+	store.MustRegister[KeyPermissions]()
+	store.MustRegister[KeyRegistration]()
+}
+
+func NewKeyDB(dbFolder string) (*DynKDB, error) {
+	conn, err := store.OpenDB(filepath.Join(dbFolder, "ssh-gateway-kdb.db"))
+	if err != nil {
+		return nil, err
+	}
+	return &DynKDB{conn: conn}, nil
+}
 
 func (d *DynKDB) RegisterKey(ctx context.Context, key ssh.PublicKey, validFrom, expiresAt time.Time, allowedHosts []string) error {
 	lookupKey := d.computeKeyLookup(key)
@@ -186,17 +201,14 @@ func (d *DynKDB) RequestKeyRegistration(ctx context.Context, key KeyRegistration
 
 func (d *DynKDB) lookupAndVerifyConfig(ctx context.Context, key ssh.PublicKey) (KeyConfig, error) {
 	lookupKey := d.computeKeyLookup(key)
-	ops := d.Store.Ops(false)
-	defer ops.Close()
-	val := ops.KV().GetBytes(ctx, nil, lookupKey)
-	if val == nil {
+	cfg := KeyConfig{
+		ID: lookupKey,
+	}
+	cfg, err := store.LookupOne(ctx, d.conn, cfg)
+	if err != nil {
 		return KeyConfig{}, errNotAuthorized
 	}
-	var cfg KeyConfig
-	if err := json.Unmarshal(val, &cfg); err != nil {
-		slog.Error("Invalid key-config from database", "lookup", lookupKey)
-		return KeyConfig{}, errNotAuthorized
-	}
+
 	now := time.Now()
 	if cfg.ValidFrom.After(now) || cfg.ExpiresAt.Before(now) {
 		return KeyConfig{}, errNotAuthorized

@@ -43,7 +43,8 @@ var (
 //		Completed      bool          `db:"completed"`
 //		NewField       string        `db:"new_field"`
 //	}
-func MustRegister(tp reflect.Type) {
+func MustRegister[T any]() {
+	tp := reflect.TypeFor[T]()
 	md := mappingData{}
 	genDDL(&md, tp)
 	md.insert, md.delete, md.lookup, md.match = generateDMLStatements(&md, tp)

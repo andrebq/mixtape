@@ -16,10 +16,6 @@ import (
 	gossh "golang.org/x/crypto/ssh"
 )
 
-type (
-	ctxkey byte
-)
-
 var (
 	userCtxKey = ctxKey(1)
 )
@@ -135,11 +131,13 @@ func (g *Gateway) protectHttpFunc(fn http.HandlerFunc) http.HandlerFunc {
 		r.SetBasicAuth("", "")
 		r.Header.Del("Authorization")
 
-		valid, owner, err := g.tdb.Valid(r.Context(), token)
-		if err != nil || !valid {
-			http.Error(w, "Not authorized", http.StatusUnauthorized)
-			return
-		}
+		// TODO: add validation here
+		// valid, owner, err := g.tdb.Valid(r.Context(), token)
+		// if err != nil || !valid {
+		// 	http.Error(w, "Not authorized", http.StatusUnauthorized)
+		// 	return
+		// }
+		owner := "owner"
 		fn(w, setUser(r, owner))
 	}
 }
