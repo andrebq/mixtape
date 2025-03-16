@@ -7,6 +7,7 @@ import (
 	"os/signal"
 
 	"github.com/andrebq/mixtape/internal/rpc"
+	"github.com/andrebq/mixtape/prototypes/tunnel"
 	"github.com/andrebq/mixtape/taskman"
 	"github.com/urfave/cli/v2"
 )
@@ -16,6 +17,7 @@ func main() {
 		Name: "mixtape",
 		Commands: []*cli.Command{
 			agentCmd(),
+			tunnelCmd(),
 		},
 	}
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
@@ -23,6 +25,24 @@ func main() {
 	if err := app.RunContext(ctx, os.Args); err != nil {
 		slog.ErrorContext(ctx, "Application fault", "err", err)
 		os.Exit(1)
+	}
+}
+
+func tunnelCmd() *cli.Command {
+	return &cli.Command{
+		Name: "tunnel",
+		Subcommands: []*cli.Command{
+			tunnelServerCmd(),
+		},
+	}
+}
+
+func tunnelServerCmd() *cli.Command {
+	return &cli.Command{
+		Name: "server",
+		Action: func(ctx *cli.Context) error {
+			return tunnel.Run(ctx.Context)
+		},
 	}
 }
 
