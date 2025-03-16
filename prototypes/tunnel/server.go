@@ -24,7 +24,9 @@ func Run(ctx context.Context) error {
 			return true
 		}),
 		DialForLocalPortForward: func(ctx ssh.Context, bindHost string, bindPort uint32) (net.Conn, error) {
-			return d2s.Dial(bindHost, bindPort)
+			conn, err := d2s.Dial(bindHost, bindPort)
+			slog.Info("Connection to host", "host", bindHost, "port", bindPort, "error", err, "conn", conn)
+			return conn, err
 		},
 		Addr: port,
 		Handler: ssh.Handler(func(s ssh.Session) {
@@ -40,6 +42,10 @@ func Run(ctx context.Context) error {
 		RequestHandlers: map[string]ssh.RequestHandler{
 			"tcpip-forward":        forwardHandler.HandleSSHRequest,
 			"cancel-tcpip-forward": forwardHandler.HandleSSHRequest,
+		},
+		ChannelHandlers: map[string]ssh.ChannelHandler{
+			"direct-tcpip": ssh.DirectTCPIPHandler,
+			"session":      ssh.DefaultSessionHandler,
 		},
 	}
 	go func() {
