@@ -3,6 +3,7 @@
 default: build
 
 include Protobuf.mk
+include Demo.mk
 
 generate:
 	go install github.com/tinylib/msgp@latest

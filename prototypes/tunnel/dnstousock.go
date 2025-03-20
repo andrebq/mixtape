@@ -21,10 +21,11 @@ type (
 	}
 
 	sockInfo struct {
-		d   *DNS2Socket
-		lst net.Listener
-		fp  string
-		dk  domainKey
+		d           *DNS2Socket
+		lst         net.Listener
+		fp          string
+		virtualAddr net.Addr
+		dk          domainKey
 	}
 
 	domainKey struct {
@@ -56,7 +57,8 @@ func (d *DNS2Socket) CreateNew(host string, port uint32) (net.Listener, error) {
 		}
 		var sock net.Listener
 		sock, err = net.Listen("unix", sockname)
-		si = sockInfo{lst: sock, fp: sockname, d: d, dk: dk}
+		vaddr, _ := net.ResolveTCPAddr("tcp", net.JoinHostPort(host, strconv.FormatUint(uint64(port), 10)))
+		si = sockInfo{lst: sock, fp: sockname, d: d, dk: dk, virtualAddr: vaddr}
 		for i, old := range v {
 			if old.fp == "" {
 				v[i] = si
@@ -104,5 +106,5 @@ func (d *DNS2Socket) computeSocketName(host string, port uint32, id uint64) stri
 }
 
 func (s sockInfo) Accept() (net.Conn, error) { return s.lst.Accept() }
-func (s sockInfo) Addr() net.Addr            { return s.lst.Addr() }
+func (s sockInfo) Addr() net.Addr            { return s.virtualAddr }
 func (si sockInfo) Close() error             { return si.d.removeSocket(si) }
